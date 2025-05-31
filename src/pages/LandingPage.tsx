@@ -91,7 +91,7 @@ const LandingPage: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="phase-card">
+            <Card className="bg-sky-100 rounded-xl p-6 shadow-sm border border-sky-200 hover:shadow-md transition-all duration-200">
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-professional-grey-100 rounded-lg flex items-center justify-center mb-4">
                   <Users className="h-6 w-6 text-professional-grey-600" />
@@ -126,7 +126,7 @@ const LandingPage: React.FC = () => {
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Free Plan */}
-            <Card className="phase-card">
+            <Card className="bg-white rounded-xl p-6 shadow-sm border border-professional-grey-200 hover:shadow-md transition-all duration-200">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
                   <h3 className="text-2xl font-bold text-professional-grey-900 mb-2">Free</h3>
@@ -156,7 +156,7 @@ const LandingPage: React.FC = () => {
             </Card>
 
             {/* Premium Plan */}
-            <Card className="phase-card active">
+            <Card className="bg-white rounded-xl p-6 shadow-sm border border-professional-grey-200 hover:shadow-md transition-all duration-200 ring-2 ring-growth-teal-500 ring-offset-2">
               <CardContent className="p-8">
                 <div className="text-center mb-6">
                   <div className="inline-block bg-growth-teal-500 text-white text-sm font-medium px-3 py-1 rounded-full mb-2">
