@@ -14,10 +14,11 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
+  socialLogin: (provider: 'google' | 'facebook' | 'github') => Promise<void>;
   logout: () => void;
   loading: boolean;
   updateUserPhase: (phase: number) => void;
-  upgradeToпремium: () => Promise<void>;
+  upgradeToPremium: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -91,6 +92,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const socialLogin = async (provider: 'google' | 'facebook' | 'github') => {
+    setLoading(true);
+    try {
+      // Simulate social login API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const newUser: User = {
+        id: '1',
+        email: `user@${provider}.com`,
+        name: `User from ${provider}`,
+        isPremium: false,
+        currentPhase: 1,
+        completedPhases: []
+      };
+      
+      setUser(newUser);
+      localStorage.setItem('mentorAI_user', JSON.stringify(newUser));
+    } catch (error) {
+      throw new Error(`${provider} login failed`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('mentorAI_user');
@@ -108,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const upgradeToPreium = async () => {
+  const upgradeToPremium = async () => {
     if (user) {
       const updatedUser = { ...user, isPremium: true };
       setUser(updatedUser);
@@ -121,10 +146,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       user,
       login,
       signup,
+      socialLogin,
       logout,
       loading,
       updateUserPhase,
-      upgradeToПремium: upgradeToPreium
+      upgradeToPremium
     }}>
       {children}
     </AuthContext.Provider>
