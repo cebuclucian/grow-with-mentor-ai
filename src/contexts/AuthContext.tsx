@@ -1,7 +1,7 @@
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../integrations/supabase/client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-export interface User {
+interface User {
   id: string;
   email: string;
   name: string;
@@ -12,57 +12,76 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   socialLogin: (provider: 'google' | 'facebook' | 'github') => Promise<void>;
   logout: () => void;
-  loading: boolean;
-  updateUserPhase: (phase: number) => void;
-  upgradeToPremium: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Simulate checking for existing session
-    const savedUser = localStorage.getItem('mentorAI_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setLoading(false);
+    const session = supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        const supabaseUser = data.session.user;
+        const currentUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          name: supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+          isPremium: false,
+          currentPhase: 1,
+          completedPhases: []
+        };
+        setUser(currentUser);
+      }
+      setLoading(false);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const supabaseUser = session.user;
+        const currentUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          name: supabaseUser.user_metadata?.full_name || supabaseUser.email?.split('@')[0] || '',
+          isPremium: false,
+          currentPhase: 1,
+          completedPhases: []
+        };
+        setUser(currentUser);
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => {
+      authListener?.subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: User = {
-        id: '1',
-        email,
-        name: email.split('@')[0],
-        isPremium: false,
-        currentPhase: 1,
-        completedPhases: []
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('mentorAI_user', JSON.stringify(newUser));
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (data.user) {
+        const currentUser: User = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name: data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || '',
+          isPremium: false,
+          currentPhase: 1,
+          completedPhases: []
+        };
+        setUser(currentUser);
+      }
     } catch (error) {
-      throw new Error('Login failed');
+      throw new Error('Login failed: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -71,22 +90,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, name: string) => {
     setLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: User = {
-        id: '1',
+      const { error, data } = await supabase.auth.signUp({
         email,
-        name,
-        isPremium: false,
-        currentPhase: 1,
-        completedPhases: []
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('mentorAI_user', JSON.stringify(newUser));
+        password,
+        options: {
+          data: { full_name: name }
+        }
+      });
+      if (error) throw error;
+      if (data.user) {
+        const currentUser: User = {
+          id: data.user.id,
+          email: data.user.email || '',
+          name,
+          isPremium: false,
+          currentPhase: 1,
+          completedPhases: []
+        };
+        setUser(currentUser);
+      }
     } catch (error) {
-      throw new Error('Signup failed');
+      throw new Error('Signup failed: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -95,64 +119,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const socialLogin = async (provider: 'google' | 'facebook' | 'github') => {
     setLoading(true);
     try {
-      // Simulate social login API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const newUser: User = {
-        id: '1',
-        email: `user@${provider}.com`,
-        name: `User from ${provider}`,
-        isPremium: false,
-        currentPhase: 1,
-        completedPhases: []
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('mentorAI_user', JSON.stringify(newUser));
+      const { error } = await supabase.auth.signInWithOAuth({ provider });
+      if (error) throw error;
+      // The user will be redirected to the provider's login page
     } catch (error) {
-      throw new Error(`${provider} login failed`);
+      throw new Error(`${provider} login failed: ` + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('mentorAI_user');
-  };
-
-  const updateUserPhase = (phase: number) => {
-    if (user) {
-      const updatedUser = {
-        ...user,
-        currentPhase: phase,
-        completedPhases: [...user.completedPhases, phase - 1].filter((p, i, arr) => arr.indexOf(p) === i && p > 0)
-      };
-      setUser(updatedUser);
-      localStorage.setItem('mentorAI_user', JSON.stringify(updatedUser));
-    }
-  };
-
-  const upgradeToPremium = async () => {
-    if (user) {
-      const updatedUser = { ...user, isPremium: true };
-      setUser(updatedUser);
-      localStorage.setItem('mentorAI_user', JSON.stringify(updatedUser));
-    }
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      login,
-      signup,
-      socialLogin,
-      logout,
-      loading,
-      updateUserPhase,
-      upgradeToPremium
-    }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, socialLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
