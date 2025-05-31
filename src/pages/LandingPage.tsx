@@ -55,7 +55,7 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="phase-card">
+            <Card className="bg-sky-100 rounded-xl p-6 shadow-sm border border-sky-200 hover:shadow-md transition-all duration-200">
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-professional-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Brain className="h-6 w-6 text-professional-blue-600" />
@@ -73,7 +73,7 @@ const LandingPage: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="phase-card">
+            <Card className="bg-sky-100 rounded-xl p-6 shadow-sm border border-sky-200 hover:shadow-md transition-all duration-200">
               <CardContent className="p-6">
                 <div className="w-12 h-12 bg-growth-teal-100 rounded-lg flex items-center justify-center mb-4">
                   <TrendingUp className="h-6 w-6 text-growth-teal-600" />
